@@ -50,5 +50,5 @@ seller_map = {"Dealer": 0, "Individual": 1}
 trans_map = {"Manual": 0, "Automatic": 1}
 
 # Predict button
-if st.button("Predict Price"):
-prediction = model.predict([[year, present_price, initial_price, kms_driven, fuel_type, seller_type, transmission, owner]])
+if request.method == "POST":
+    prediction = model.predict([[year, present_price, initial_price, kms_driven, fuel_type, seller_type, transmission, owner]])
