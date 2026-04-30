@@ -1,54 +1,59 @@
 import streamlit as st
 import pandas as pd
+import numpy as np
 from sklearn.ensemble import RandomForestRegressor
 
-# Title
-st.title("🚗 Car Price Prediction App")
+st.title("🚗 Car Price Prediction System")
 
 # Load dataset
-df = pd.read_csv("cardekho.csv")
+@st.cache_data
+def load_data():
+    data = pd.read_csv("cardekho.csv")
+    return data
 
-# Preprocessing
-df['Fuel_Type'] = df['Fuel_Type'].map({'Petrol': 0, 'Diesel': 1, 'CNG': 2})
-df['Seller_Type'] = df['Seller_Type'].map({'Dealer': 0, 'Individual': 1})
-df['Transmission'] = df['Transmission'].map({'Manual': 0, 'Automatic': 1})
+data = load_data()
 
-df = df.dropna()
+# Data preprocessing
+data['Car_Age'] = 2025 - data['Year']
+data.drop(['Car_Name', 'Year'], axis=1, inplace=True)
 
-# ✅ Add initial_price if not present
-if 'initial_price' not in df.columns:
-    if 'Present_Price' in df.columns:
-        df['initial_price'] = df['Present_Price']
-    else:
-        df['initial_price'] = 0
+# Convert categorical data
+data = pd.get_dummies(data, drop_first=True)
 
-# Features & target
-X = df.drop("Selling_Price", axis=1)
-y = df["Selling_Price"]
+# Split features & target
+X = data.drop('Selling_Price', axis=1)
+y = data['Selling_Price']
 
 # Train model
 model = RandomForestRegressor()
 model.fit(X, y)
 
-# User Inputs
-year = st.number_input("Year", 2000, 2025)
-present_price = st.number_input("Present Price", 0.0)
+# User inputs
+year = st.number_input("Year of Purchase", min_value=2000, max_value=2025)
+present_price = st.number_input("Present Price (in lakhs)", min_value=0.0)
+kms_driven = st.number_input("Kilometers Driven", min_value=0)
+owner = st.selectbox("Owner", [0, 1, 2, 3])
 
-# ✅ New input for initial price
-initial_price = st.number_input("Initial Price (Original Price)", 0.0)
-
-kms_driven = st.number_input("Kms Driven", 0)
-
-fuel_type = st.selectbox("Fuel Type", ["Petrol", "Diesel", "CNG"])
-seller_type = st.selectbox("Seller Type", ["Dealer", "Individual"])
+fuel = st.selectbox("Fuel Type", ["Petrol", "Diesel", "CNG"])
+seller = st.selectbox("Seller Type", ["Dealer", "Individual"])
 transmission = st.selectbox("Transmission", ["Manual", "Automatic"])
-owner = st.number_input("Owner", 0)
 
-# Convert inputs
-fuel_map = {"Petrol": 0, "Diesel": 1, "CNG": 2}
-seller_map = {"Dealer": 0, "Individual": 1}
-trans_map = {"Manual": 0, "Automatic": 1}
+# Convert input to model format
+car_age = 2025 - year
 
-# Predict button
-if request.method == "POST":
-    prediction = model.predict([[year, present_price, initial_price, kms_driven, fuel_type, seller_type, transmission, owner]])
+fuel_diesel = 1 if fuel == "Diesel" else 0
+fuel_petrol = 1 if fuel == "Petrol" else 0
+
+seller_individual = 1 if seller == "Individual" else 0
+transmission_manual = 1 if transmission == "Manual" else 0
+
+# Predict
+if st.button("Predict Price"):
+    
+    input_data = np.array([[present_price, kms_driven, owner, car_age,
+                            fuel_diesel, fuel_petrol,
+                            seller_individual, transmission_manual]])
+    
+    prediction = model.predict(input_data)
+
+    st.success(f"Estimated Price: ₹ {round(prediction[0], 2)} lakhs")
