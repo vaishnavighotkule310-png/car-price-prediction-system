@@ -51,4 +51,4 @@ trans_map = {"Manual": 0, "Automatic": 1}
 
 # Predict button
 if st.button("Predict Price"):
-    prediction = model.predict([[year, present_price, initial_price,
+prediction = model.predict([[year, present_price, initial_price, kms_driven, fuel_type, seller_type, transmission, owner]])
